@@ -121,6 +121,10 @@ main{padding-block:18px 40px}
 .float.block{color:var(--gem);font-size:22px}
 .fighter.shielded .av{box-shadow:0 0 0 5px var(--gem),0 0 26px 8px color-mix(in srgb,var(--gem) 60%,transparent)}
 .fighter.powered .av{filter:drop-shadow(0 0 14px var(--gold)) saturate(1.4)}
+.coupon{display:grid;gap:8px}
+.coupon .row{flex-wrap:nowrap}
+.coupon input{flex:1;min-width:0;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px;letter-spacing:.05em}
+.coupon input:focus-visible{outline:3px solid var(--gem);outline-offset:1px}
 .empty{text-align:center;display:grid;gap:12px;justify-items:center;padding:32px 16px}
 
 /* eggs */
@@ -294,7 +298,7 @@ function skills(p){
 
 // ---------- state ----------
 const KEY = 'pet-survival-v1';
-const fresh = () => ({coins:100, gems:0, stage:1, pets:{}, active:null, items:[], equip:{}, inv:{def5:0,def10:0,atk2:0}, daily:{week:'',days:[0,0,0,0,0,0,0]}});
+const fresh = () => ({coins:100, gems:0, stage:1, pets:{}, active:null, items:[], equip:{}, inv:{def5:0,def10:0,atk2:0}, coupons:[], daily:{week:'',days:[0,0,0,0,0,0,0]}});
 let S = fresh();
 try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(fresh(), JSON.parse(raw)); } catch(e) {}
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
@@ -625,8 +629,25 @@ function renderDaily(){
       <p class="sub" style="margin-top:12px">${t===6 ? (perfectWeek() ? '이번 주 개근! 오늘은 200코인이에요.' : '이번 주에 빠진 날이 있어서 오늘은 55코인이에요.') : (S.daily.days.slice(0,t).every(Boolean) ? '지금까지 개근 중이에요. 일요일 200코인까지 화이팅!' : '이번 주는 빠진 날이 있어 일요일 보상이 55코인이에요.')}</p>
     </div>
     <button class="btn" data-claim ${done?'disabled':''}>${done ? '오늘 보상을 받았어요' : `오늘 보상 받기 🪙${todayReward()}`}</button>
+    <form class="card coupon" id="couponForm">
+      <h3 style="font-size:18px">쿠폰 입력</h3>
+      <p class="sub">받은 쿠폰 코드를 입력하면 보상을 받아요. 쿠폰마다 한 번만 쓸 수 있어요.</p>
+      <div class="row"><input id="couponCode" autocomplete="off" autocapitalize="characters" placeholder="쿠폰 코드" aria-label="쿠폰 코드">
+      <button class="btn sm" type="submit">받기</button></div>
+    </form>
   </div>`;
 }
+const COUPONS = {PET400:{coins:400}};
+function redeem(raw){
+  const code = raw.trim().toUpperCase().replace(/\s+/g,'');
+  const c = COUPONS[code];
+  if (!c) return toast('없는 쿠폰 코드예요. 다시 확인해 주세요');
+  S.coupons = S.coupons || [];
+  if (S.coupons.includes(code)) return toast('이미 사용한 쿠폰이에요');
+  S.coupons.push(code); S.coins += c.coins || 0; S.gems += c.gems || 0; save(); renderDaily(); hud();
+  toast(`쿠폰 사용 완료! 🪙${c.coins} 받았어요`);
+}
+document.addEventListener('submit', e => { if (e.target.id === 'couponForm'){ e.preventDefault(); redeem($('#couponCode').value); } });
 function claim(){
   if (claimedToday()) return;
   const r = todayReward(); S.daily.days[dayIdx()] = 1; S.coins += r; save(); renderDaily(); hud();
