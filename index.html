@@ -19,7 +19,7 @@
 :root{
   --night:#13112a; --night2:#1c1840; --panel:#221e48; --panel2:#2d2860; --line:#423c80;
   --ink:#f1ecff; --muted:#a9a2d6; --gold:#ffcf4d; --gem:#62e4ff; --hp:#ff5d78; --ok:#5fe394; --danger:#ff6b6b;
-  --g-n:#a3a8bd; --g-r:#55d68f; --g-rr:#58aeff; --g-sr:#c773ff; --g-mr:#ffb43d;
+  --g-n:#a3a8bd; --g-r:#55d68f; --g-rr:#58aeff; --g-sr:#c773ff; --g-mr:#ffb43d; --g-my:#ff4d6d; --g-lm:#fff27a;
   --display:"Jua","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --body:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   color-scheme:dark;
@@ -74,6 +74,9 @@ main{padding-block:18px 40px}
 .grade{display:inline-block;padding:1px 8px;border-radius:999px;font-family:var(--display);font-size:13px;color:#14122b;letter-spacing:.03em}
 .g-N{background:var(--g-n)}.g-R{background:var(--g-r)}.g-RR{background:var(--g-rr)}.g-SR{background:var(--g-sr)}
 .g-MR{background:linear-gradient(90deg,var(--g-mr),#ff6ba8,var(--g-sr))}
+.g-MY{background:linear-gradient(90deg,var(--g-my),#ff9a3d);color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.4);box-shadow:0 0 10px var(--g-my)}
+.g-LM{background:linear-gradient(90deg,var(--g-lm),#7af0ff,#ff8af0,var(--g-lm));background-size:200% 100%;animation:shine 2.5s linear infinite;box-shadow:0 0 12px var(--g-lm)}
+@keyframes shine{to{background-position:200% 0}}
 
 /* battle */
 .stagebar{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
@@ -212,6 +215,8 @@ const GRADES = {
   RR: {name:'레어레어',   mult:1.7, hp:75},
   SR: {name:'슈퍼레어',   mult:2.2, hp:95},
   MR: {name:'마스터레어', mult:2.8, hp:120},
+  MY: {name:'신화', mult:3.5, hp:150},
+  LM: {name:'레전드 마스터', mult:4.3, hp:180},
 };
 const ELEM = {불:'#ff7a45',물:'#4fb3ff',풀:'#5bd17a',땅:'#c49a6c',바람:'#8fe3cf',번개:'#ffd84d',얼음:'#a8e6ff',빛:'#fff0a0',어둠:'#8a6bd8'};
 const PETS = [
@@ -241,12 +246,14 @@ const PETS = [
   [24,'태초룡','🐉','MR','불',['용의 숨결','비늘 폭풍','태초의 불꽃']],
   [25,'심연고래','🐋','MR','물',['심연 파동','고래의 노래','대심연 붕괴']],
   [26,'시간의 폭군','🦖','MR','땅',['시간 깨물기','지각 변동','멸종의 운석']],
+  [27,'천둥신 표범','🐆','MY','번개',['신뇌 질주','천둥 발톱','신화의 뇌격']],
+  [28,'만물의 용왕','🐲','LM','빛',['용왕의 포효','만상 폭풍','천지개벽']],
 ].map(([id,name,emo,grade,el,sk]) => ({id,name,emo,grade,el,sk}));
 const PET = Object.fromEntries(PETS.map(p => [p.id,p]));
 
 const EGGS = {
   normal:  {name:'일반 알', ico:'🥚', price:50,  rates:[['N',.60],['R',.30],['RR',.10]]},
-  premium: {name:'고급 알', ico:'🥚', price:200, rates:[['RR',.60],['SR',.30],['MR',.10]]},
+  premium: {name:'고급 알', ico:'🥚', price:200, rates:[['RR',.57],['SR',.30],['MR',.09],['MY',.03],['LM',.01]]},
 };
 const pool = egg => PETS.filter(p => egg.rates.some(r => r[0] === p.grade));
 
