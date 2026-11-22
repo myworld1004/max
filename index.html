@@ -106,6 +106,18 @@ main{padding-block:18px 40px}
 .skill.ult .n{color:var(--gold)}
 .skill .cd{position:absolute;inset:0;background:conic-gradient(rgba(8,6,20,.72) var(--p,0deg),transparent 0);display:grid;place-items:center;font-family:var(--display);font-size:24px;pointer-events:none}
 .skill:disabled{cursor:not-allowed}
+.bitems{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bitem{position:relative;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:8px 4px;display:grid;justify-items:center;gap:1px;text-align:center}
+.bitem .k{position:absolute;top:3px;left:7px;font-size:11px;color:var(--muted)}
+.bitem .ie{font-size:22px;line-height:1.1}.bitem .n{font-family:var(--display);font-size:14px}.bitem .c{font-size:12px;color:var(--gold);font-variant-numeric:tabular-nums}
+.bitem:disabled{opacity:.45;cursor:not-allowed}
+.buffs{position:absolute;top:8px;left:8px;display:grid;gap:4px;font-family:var(--display);font-size:14px;font-variant-numeric:tabular-nums;pointer-events:none}
+.buffs span{background:rgba(10,8,28,.7);border-radius:999px;padding:2px 10px}
+.warn{font-family:var(--display);font-size:14px;color:var(--gold);min-height:1.3em;animation:blink .6s infinite alternate}
+@keyframes blink{to{opacity:.4}}
+.float.block{color:var(--gem);font-size:22px}
+.fighter.shielded .av{box-shadow:0 0 0 5px var(--gem),0 0 26px 8px color-mix(in srgb,var(--gem) 60%,transparent)}
+.fighter.powered .av{filter:drop-shadow(0 0 14px var(--gold)) saturate(1.4)}
 .empty{text-align:center;display:grid;gap:12px;justify-items:center;padding:32px 16px}
 
 /* eggs */
@@ -249,12 +261,22 @@ const ITEM = Object.fromEntries(ITEMS.map(i => [i.id,i]));
 const SLOT = {head:'머리',face:'얼굴',hand:'손',aura:'오라'};
 const ITEM_PRICE = 25;
 
+// 전투 아이템 (코인으로 구매, 1회용)
+const BATTLE_ITEMS = [
+  {id:'def5',  name:'방어 5초',     emo:'🛡️', price:100, kind:'def', sec:5,  desc:'5초 동안 몬스터 공격을 모두 막아요'},
+  {id:'def10', name:'방어 10초',    emo:'🔰', price:200, kind:'def', sec:10, desc:'10초 동안 몬스터 공격을 모두 막아요'},
+  {id:'atk2',  name:'공격력 ×2',    emo:'💪', price:250, kind:'atk', sec:10, desc:'10초 동안 스킬 피해가 2배가 돼요'},
+];
+const BITEM = Object.fromEntries(BATTLE_ITEMS.map(i => [i.id,i]));
+
 const MONS = [
   ['초록 슬라임','👾'],['숲 고블린','👺'],['해골 병사','💀'],['굶주린 좀비','🧟'],['동굴 박쥐','🦇'],
   ['늪지 오우거','👹'],['독전갈','🦂'],['거미 여왕','🕷️'],['떠도는 망령','👻'],['검은 마녀','🧙'],
   ['고대 골렘','🗿'],['피의 뱀파이어','🧛'],['산악 트롤','🧌'],['늪 악어왕','🐊'],['어둠의 마왕','😈'],
 ];
-const monFor = s => { const [name,emo] = MONS[(s-1) % MONS.length]; return {name,emo,hp:50 + 5*(s-1),atk:3 + Math.floor(s*0.6)}; };
+// 난이도: 체력은 50부터 5씩, 공격력은 4 + 스테이지×0.8, 1.7초마다 공격, 4번째 공격마다 강공격(×1.8)
+const MON_INT = 1700, STRONG_EVERY = 4, STRONG_MULT = 1.8;
+const monFor = s => { const [name,emo] = MONS[(s-1) % MONS.length]; return {name,emo,hp:50 + 5*(s-1),atk:4 + Math.floor(s*0.8)}; };
 
 const SKILL_CD = [1, 3, 10];
 function skills(p){
@@ -265,7 +287,7 @@ function skills(p){
 
 // ---------- state ----------
 const KEY = 'pet-survival-v1';
-const fresh = () => ({coins:100, gems:0, stage:1, pets:{}, active:null, items:[], equip:{}, daily:{week:'',days:[0,0,0,0,0,0,0]}});
+const fresh = () => ({coins:100, gems:0, stage:1, pets:{}, active:null, items:[], equip:{}, inv:{def5:0,def10:0,atk2:0}, daily:{week:'',days:[0,0,0,0,0,0,0]}});
 let S = fresh();
 try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(fresh(), JSON.parse(raw)); } catch(e) {}
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
@@ -337,7 +359,8 @@ function renderBattle(){
         <div class="fname">${m.name}</div>
         <div class="hpbar"><i id="monBar"></i></div>
         <div class="hptxt" id="monTxt"></div>
-        <div class="hptxt">공격력 ${m.atk} · 2초마다</div>
+        <div class="hptxt">공격력 ${m.atk} · ${MON_INT/1000}초마다</div>
+        <div class="warn" id="monWarn"></div>
       </div>
       <div class="fighter pet" id="petF">
         ${avatar(p,'md',S.equip[p.id])}
@@ -345,6 +368,7 @@ function renderBattle(){
         <div class="hpbar"><i id="petBar"></i></div>
         <div class="hptxt" id="petTxt"></div>
       </div>
+      <div class="buffs" id="buffs"></div>
       <div id="arenaOver"></div>
     </div>
     <div class="skills">${sk.map((s,i) => `
@@ -355,7 +379,13 @@ function renderBattle(){
         <span class="cd" id="cd${i}"></span>
       </button>`).join('')}
     </div>
-    <p class="sub" style="text-align:center">키보드: 1 · 2 · 3 으로 스킬 사용, 스페이스로 전투 시작</p>
+    <div class="bitems">${BATTLE_ITEMS.map((it,i) => `
+      <button class="bitem" data-use="${it.id}" id="bi-${it.id}" title="${it.desc}">
+        <span class="k">${i+4}</span><span class="ie">${it.emo}</span>
+        <span class="n">${it.name}</span><span class="c" id="bic-${it.id}">×${S.inv[it.id]||0}</span>
+      </button>`).join('')}
+    </div>
+    <p class="sub" style="text-align:center">키보드: 1 · 2 · 3 스킬, 4 · 5 · 6 아이템, 스페이스로 전투 시작. 아이템은 상점에서 코인으로 사요.</p>
   </div>`;
   drawBars(); drawOverlay(); drawCooldowns(performance.now());
 }
@@ -388,7 +418,8 @@ function startBattle(){
   const p = PET[S.active]; if (!p) return;
   B.result = null; B.running = true;
   B.petMax = GRADES[p.grade].hp; B.petHp = B.petMax; B.monHp = monFor(S.stage).hp;
-  const now = performance.now(); B.ready = [now, now, now]; B.nextAtk = now + 2000;
+  const now = performance.now(); B.ready = [now, now, now]; B.nextAtk = now + MON_INT;
+  B.hits = 0; B.defUntil = 0; B.atkUntil = 0;
   renderBattle();
   cancelAnimationFrame(B.raf); B.raf = requestAnimationFrame(loop);
 }
@@ -403,10 +434,17 @@ function loop(now){
   if (!B.running) return;
   const m = monFor(S.stage);
   if (now >= B.nextAtk){
-    B.nextAtk += 2000;
-    const dmg = Math.round(m.atk * (0.85 + Math.random()*0.3));
-    B.petHp -= dmg;
-    anim($('#monE'),'lunge'); anim($('#petF'),'hit'); floatAt($('#petF'), '-' + dmg, 'hurt');
+    B.nextAtk += MON_INT;
+    B.hits += 1;
+    const strong = B.hits % STRONG_EVERY === 0;
+    const dmg = Math.round(m.atk * (strong ? STRONG_MULT : 1) * (0.85 + Math.random()*0.3));
+    anim($('#monE'),'lunge');
+    if (now < B.defUntil){
+      floatAt($('#petF'), '🛡️ 막음!', 'block');
+    } else {
+      B.petHp -= dmg;
+      anim($('#petF'),'hit'); floatAt($('#petF'), (strong ? '💥-' : '-') + dmg, strong ? 'hurt big' : 'hurt');
+    }
     drawBars();
     if (B.petHp <= 0){ B.running = false; B.result = 'lose'; drawOverlay(); drawCooldowns(now); return; }
   }
@@ -422,13 +460,37 @@ function drawCooldowns(now){
     cd.textContent = left > 0 && s.ult ? Math.ceil(left/1000) : '';
     btn.disabled = !B.running || left > 0;
   });
+  drawItems(now);
+}
+function drawItems(now){
+  BATTLE_ITEMS.forEach(it => {
+    const btn = $('#bi-'+it.id); if (!btn) return;
+    $('#bic-'+it.id).textContent = '×' + (S.inv[it.id]||0);
+    btn.disabled = !B.running || !(S.inv[it.id] > 0);
+  });
+  const def = B.running ? Math.max(0, B.defUntil - now) : 0, atk = B.running ? Math.max(0, B.atkUntil - now) : 0;
+  const bf = $('#buffs');
+  if (bf) bf.innerHTML = (def ? `<span>🛡️ 방어 ${(def/1000).toFixed(1)}초</span>` : '') + (atk ? `<span>💪 공격 ×2 ${(atk/1000).toFixed(1)}초</span>` : '');
+  $('#petF')?.classList.toggle('shielded', def > 0);
+  $('#petF')?.classList.toggle('powered', atk > 0);
+  const w = $('#monWarn'); if (w) w.textContent = B.running && (B.hits + 1) % STRONG_EVERY === 0 ? '⚠️ 강공격 준비!' : '';
+}
+function useItem(id){
+  const it = BITEM[id];
+  if (!B.running || !it || !(S.inv[id] > 0)) return;
+  const now = performance.now();
+  S.inv[id] -= 1; save();
+  if (it.kind === 'def') B.defUntil = Math.max(now, B.defUntil) + it.sec*1000;
+  else B.atkUntil = Math.max(now, B.atkUntil) + it.sec*1000;
+  floatAt($('#petF'), it.emo + ' ' + it.name, 'block');
+  drawItems(now);
 }
 function useSkill(i){
   if (!B.running) return;
   const now = performance.now(); if (now < B.ready[i]) return;
   const s = skills(PET[S.active])[i];
   B.ready[i] = now + s.cd*1000;
-  const dmg = Math.round(s.dmg * (0.9 + Math.random()*0.2));
+  const dmg = Math.round(s.dmg * (now < B.atkUntil ? 2 : 1) * (0.9 + Math.random()*0.2));
   B.monHp -= dmg;
   anim($('#petF'),'lunge'); anim($('#monF'),'hit');
   floatAt($('#monF'), (s.ult ? '⚡' : '-') + dmg, s.ult ? 'big' : '');
@@ -445,6 +507,7 @@ function useSkill(i){
 document.addEventListener('keydown', e => {
   if (tab !== 'battle' || !$('#modal').hidden) return;
   if (['1','2','3'].includes(e.key)) useSkill(+e.key - 1);
+  if (['4','5','6'].includes(e.key)) useItem(BATTLE_ITEMS[+e.key - 4].id);
   if (e.key === ' ' && !B.running && PET[S.active]){ e.preventDefault(); startBattle(); }
 });
 
@@ -523,6 +586,10 @@ function petModal(id){
 // ---------- shop ----------
 function renderShop(){
   $('#main').innerHTML = `<div class="panel">
+    <div><h2 style="font-size:26px">전투 아이템</h2><p class="sub">코인으로 사서 전투 중에 써요. 한 번 쓰면 사라져요.</p></div>
+    <div class="items">${BATTLE_ITEMS.map(it => `<div class="item"><div class="ie">${it.emo}</div><div class="nm">${it.name}</div>
+        <div class="slot">${it.desc}</div><div class="slot">보유 ${S.inv[it.id]||0}개</div>
+        <button class="btn sm" data-bbuy="${it.id}" ${S.coins<it.price?'disabled':''}>🪙 ${it.price}</button></div>`).join('')}</div>
     <div><h2 style="font-size:26px">꾸미기 상점</h2><p class="sub">모든 아이템은 💎${ITEM_PRICE}. 한 번 사면 모든 펫에게 씌울 수 있어요. 보석은 몬스터를 처치하면 5개씩 받아요.</p></div>
     <div class="items">${ITEMS.map(it => {
       const own = S.items.includes(it.id);
@@ -576,6 +643,12 @@ document.addEventListener('click', e => {
     save(); petModal(pid); if (tab === 'pets') renderPets();
   }
   else if (d.buy) buy(+d.buy);
+  else if (d.bbuy){
+    const it = BITEM[d.bbuy]; if (S.coins < it.price) return toast('코인이 부족해요');
+    S.coins -= it.price; S.inv[it.id] = (S.inv[it.id]||0) + 1; save(); renderShop(); hud();
+    toast(`${it.name} 아이템을 샀어요 (보유 ${S.inv[it.id]}개)`);
+  }
+  else if (d.use) useItem(d.use);
   else if (d.claim !== undefined) claim();
   else if (d.close !== undefined) closeModal();
 });
