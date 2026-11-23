@@ -513,7 +513,7 @@ function loop(now){
     M.ty = Math.max(MON_R+30, Math.min(H-MON_R, P.y + Math.sin(ang)*dist));
     M.retarget = now + 1300 + Math.random()*1200;
   }
-  const mspd = Math.min(120, 55 + S.stage*1.2), dx = M.tx - M.x, dy = M.ty - M.y, dl = Math.hypot(dx, dy);
+  const mspd = Math.min(85, 40 + S.stage*0.8), dx = M.tx - M.x, dy = M.ty - M.y, dl = Math.hypot(dx, dy);
   if (dl > 2){ M.x += dx/dl*Math.min(dl, mspd*dt); M.y += dy/dl*Math.min(dl, mspd*dt); }
 
   // 보스 공격
@@ -523,7 +523,7 @@ function loop(now){
       B.zones.push({x:P.x, y:P.y, r:62, at:now+900, dur:900, dmg:Math.round(m.atk*STRONG_MULT)});
       addFx(M.x, M.y-44, '강공격!', '#ffcf4d', 18);
     } else {
-      const n = S.stage >= 20 ? 5 : S.stage >= 8 ? 3 : 1, base = Math.atan2(P.y-M.y, P.x-M.x), spd = Math.min(300, 170 + S.stage*2.5);
+      const n = S.stage >= 20 ? 4 : S.stage >= 8 ? 2 : 1, base = Math.atan2(P.y-M.y, P.x-M.x), spd = Math.min(300, 170 + S.stage*2.5);
       for (let k = 0; k < n; k++){
         const a = base + (k - (n-1)/2) * 0.26;
         B.bullets.push({x:M.x, y:M.y, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd, r:8, dmg:m.atk});
