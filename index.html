@@ -49,6 +49,9 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:col
 .dot{position:absolute;top:6px;right:22%;width:8px;height:8px;border-radius:50%;background:var(--hp)}
 
 main{padding-block:18px 40px}
+main.battle{padding-block:10px 12px}
+main.battle .panel{gap:10px}
+main.battle .stagebar h2{font-size:22px}
 .panel{display:grid;gap:16px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
 .sub{color:var(--muted);font-size:14px;margin:4px 0 0}
@@ -99,7 +102,7 @@ main{padding-block:18px 40px}
 .flash{position:absolute;inset:0;pointer-events:none;animation:flash .5s forwards}
 @keyframes flash{from{opacity:.75}to{opacity:0}}
 .over{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;text-align:center;background:rgba(14,12,34,.78);backdrop-filter:blur(2px);padding:16px}
-.over h3{font-size:34px}
+.over h3{font-size:clamp(22px,7vw,34px)}
 .skills{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:8px}
 .skill{position:relative;overflow:hidden;border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:10px 8px;text-align:center;min-height:78px;display:grid;align-content:center;gap:2px}
 .skill .k{position:absolute;top:4px;left:7px;font-size:11px;color:var(--muted)}
@@ -121,10 +124,10 @@ main{padding-block:18px 40px}
 .float.block{color:var(--gem);font-size:22px}
 .fighter.shielded .av{box-shadow:0 0 0 5px var(--gem),0 0 26px 8px color-mix(in srgb,var(--gem) 60%,transparent)}
 .fighter.powered .av{filter:drop-shadow(0 0 14px var(--gold)) saturate(1.4)}
-.field{position:relative;width:min(100%,440px,calc((100dvh - 330px) * 0.947));min-width:min(100%,260px);margin:0 auto;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#22402e}
-.field canvas{display:block;width:100%;height:auto;aspect-ratio:360/380;touch-action:none}
+.field{position:relative;width:100%;max-width:440px;margin:0 auto;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#22402e}
+.field canvas{display:block;width:100%;height:auto;aspect-ratio:360/380;touch-action:manipulation}
 .field .buffs{top:44px}
-.controls{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;max-width:440px;margin:0 auto;touch-action:none;user-select:none;-webkit-user-select:none}
+.controls{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;max-width:440px;margin:0 auto;user-select:none;-webkit-user-select:none}
 .joy{position:relative;flex:none;width:128px;height:128px;border-radius:50%;background:radial-gradient(circle,var(--panel2),var(--panel));border:2px solid var(--line);touch-action:none}
 .knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:linear-gradient(180deg,#5a52a8,#3b3670);border:2px solid var(--muted);box-shadow:0 4px 10px rgba(0,0,0,.4);pointer-events:none}
 .atk{display:flex;align-items:flex-end;gap:10px}
@@ -143,7 +146,14 @@ main{padding-block:18px 40px}
 @keyframes pulse{to{transform:scale(1.06)}}
 .abtn:disabled{filter:grayscale(.7) brightness(.7);cursor:not-allowed}
 .abtn .cd{position:absolute;inset:0;border-radius:50%;background:conic-gradient(rgba(8,6,20,.65) var(--p,0deg),transparent 0);pointer-events:none;z-index:2}
-@media (max-width:380px){.joy{width:112px;height:112px}.abtn.s1{width:88px;height:88px}.abtn.ult{width:74px;height:74px}.abtn.s2{width:64px;height:64px}}
+@media (max-width:380px),(max-height:780px){.joy{width:108px;height:108px}.abtn.s1{width:84px;height:84px}.abtn.ult{width:70px;height:70px}.abtn.s2{width:62px;height:62px}.atk,.atk .col{gap:8px}}
+main.battle .bitem{padding:5px 4px;grid-template-columns:auto auto;column-gap:6px;align-items:center;justify-content:center}
+main.battle .bitem .n,main.battle .bitem .c{justify-self:start}
+main.battle .bitem .ie{grid-row:span 2;font-size:22px}
+main.battle .bitem .k{display:none}
+@media (pointer:coarse){.battle-help{display:none}}
+@media (max-width:420px){.top{flex-wrap:nowrap;gap:6px}.logo{font-size:19px;white-space:nowrap}.res{flex-wrap:nowrap;gap:4px}.chip{padding:3px 7px;font-size:14px;gap:3px}}
+@media (max-height:780px){.top{padding-block:6px}.tab{padding:4px 2px;font-size:13px}.tab span{font-size:17px}.tabs{padding-bottom:6px}}
 .empty{text-align:center;display:grid;gap:12px;justify-items:center;padding:32px 16px}
 
 /* eggs */
@@ -364,6 +374,7 @@ document.querySelector('.tabs').addEventListener('click', e => {
 });
 function render(){
   document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === tab));
+  $('#main').classList.toggle('battle', tab === 'battle');
   ({battle:renderBattle, eggs:renderEggs, pets:renderPets, shop:renderShop, daily:renderDaily})[tab]();
   hud();
 }
@@ -423,7 +434,7 @@ function renderBattle(){
         <span class="n">${it.name}</span><span class="c" id="bic-${it.id}">×${S.inv[it.id]||0}</span>
       </button>`).join('')}
     </div>
-    <p class="sub" style="text-align:center">조이스틱으로 움직이고, 공격 버튼을 누르면 보스에게 자동 조준해요. 공격을 맞히면 ⚡궁극기 게이지가 차요. 빨간 원이 보이면 피하세요!<br>PC: WASD·방향키 이동 · J/1, K/2 공격 · L/3 궁극기 · 4·5·6 아이템 · 스페이스 시작</p>
+    <p class="sub battle-help" style="text-align:center">조이스틱으로 움직이고, 공격 버튼을 누르면 보스에게 자동 조준해요. 공격을 맞히면 ⚡궁극기 게이지가 차요. 빨간 원이 보이면 피하세요!<br>PC: WASD·방향키 이동 · J/1, K/2 공격 · L/3 궁극기 · 4·5·6 아이템 · 스페이스 시작</p>
   </div>`;
   const cv = $('#cv'), dpr = Math.min(3, window.devicePixelRatio || 1);
   cv.width = W*dpr; cv.height = H*dpr;
@@ -431,6 +442,7 @@ function renderBattle(){
   bindControls();
   const now = performance.now();
   drawField(now); drawOverlay(); drawHud(now);
+  fitField();
 }
 function drawOverlay(){
   const o = $('#arenaOver'); if (!o) return;
@@ -587,6 +599,19 @@ function useSkill(i){
   const P = B.pet, M = B.mon, a = Math.atan2(M.y-P.y, M.x-P.x);
   B.shots.push({x:P.x, y:P.y, vx:Math.cos(a)*c.speed, vy:Math.sin(a)*c.speed, r:c.r, d:0, range:c.range, dmg, gain:c.gain, big:i===1});
 }
+
+// 전투 화면이 폰 화면 한 장에 들어가도록 전장 크기를 맞춤
+function fitField(){
+  const f = $('#field'); if (!f) return;
+  f.style.width = '';
+  const fh = f.getBoundingClientRect().height;
+  const rest = document.documentElement.scrollHeight - fh;
+  const avail = (window.visualViewport ? visualViewport.height : innerHeight) - rest;
+  const full = f.parentElement.clientWidth;
+  const w = Math.max(200, Math.min(full, 440, avail * 360/380));
+  f.style.width = w + 'px';
+}
+window.addEventListener('resize', () => { if (tab === 'battle') fitField(); });
 
 // ---------- 그리기 ----------
 function drawField(now){
