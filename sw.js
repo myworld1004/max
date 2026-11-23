@@ -1,5 +1,5 @@
 // 팻 서바이벌 오프라인 캐시. 게임 파일을 고치면 VERSION을 올리세요.
-const VERSION = 'pet-survival-v4';
+const VERSION = 'pet-survival-v5';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png'];
 
 self.addEventListener('install', e => {
