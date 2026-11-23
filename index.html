@@ -310,6 +310,8 @@ const MONS = [
 ];
 // 난이도: 체력은 30부터 3씩, 공격력은 4 + 스테이지×0.8, 1.7초마다 공격, 4번째 공격마다 강공격(×1.8)
 const MON_INT = 1700, STRONG_EVERY = 4, STRONG_MULT = 1.8;
+// 처치 보상: 코인 50 + 스테이지마다 5, 보석 5 + 5스테이지마다 1
+const rewardFor = s => ({coins:50 + 5*(s-1), gems:5 + Math.floor((s-1)/5)});
 const monFor = s => { const [name,emo] = MONS[(s-1) % MONS.length]; return {name,emo,hp:30 + 3*(s-1),atk:4 + Math.floor(s*0.8)}; };
 
 const SKILL_CD = [0.7, 2.2, 0]; // 궁극기는 쿨타임 대신 게이지 충전
@@ -403,7 +405,7 @@ function renderBattle(){
   const sk = skills(p);
   if (!B.running && !B.pet) resetField();
   $('#main').innerHTML = `<div class="panel">
-    <div class="stagebar"><h2>스테이지 ${S.stage}</h2><span class="sub">처치 보상 🪙50 · 💎5</span></div>
+    <div class="stagebar"><h2>스테이지 ${S.stage}</h2><span class="sub">처치 보상 🪙${rewardFor(S.stage).coins} · 💎${rewardFor(S.stage).gems}</span></div>
     <div class="field" id="field">
       <canvas id="cv" aria-label="전투 필드"></canvas>
       <div class="buffs" id="buffs"></div>
@@ -440,7 +442,7 @@ function drawOverlay(){
   const m = monFor(S.stage);
   if (B.result === 'win'){
     o.innerHTML = `<div class="over"><h3 style="color:var(--gold)">승리!</h3>
-      <div class="sub" style="color:var(--ink);font-size:18px">🪙 +50 · 💎 +5</div>
+      <div class="sub" style="color:var(--ink);font-size:18px">🪙 +${rewardFor(S.stage-1).coins} · 💎 +${rewardFor(S.stage-1).gems}</div>
       <button class="btn" data-act="start">스테이지 ${S.stage} 도전</button></div>`;
   } else if (B.result === 'lose'){
     o.innerHTML = `<div class="over"><h3 style="color:var(--hp)">패배…</h3>
@@ -568,7 +570,7 @@ function hitMon(dmg, big){
 }
 function win(now){
   B.mon.hp = 0; B.running = false; B.result = 'win';
-  S.coins += 50; S.gems += 5; S.stage += 1; save(); hud();
+  const rw = rewardFor(S.stage); S.coins += rw.coins; S.gems += rw.gems; S.stage += 1; save(); hud();
   drawField(now); drawHud(now);
   const h = $('.stagebar h2'); if (h) h.textContent = `스테이지 ${S.stage-1} 클리어`;
   drawOverlay();
