@@ -861,7 +861,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 render();
 
 // 앱 설치·오프라인 지원
-if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:'){
+  navigator.serviceWorker.register('sw.js', {updateViaCache:'none'}).then(r => r.update()).catch(() => {});
+  // 새 버전이 설치되면 한 번 자동 새로고침 (전투 중이면 다음 화면 전환 때)
+  let reloaded = false; const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloaded || !hadController) return;
+    const go = () => { if (!reloaded && !B.running){ reloaded = true; location.reload(); } };
+    go(); if (!reloaded) document.addEventListener('click', go);
+  });
+}
 try { navigator.storage?.persist?.(); } catch(e) {}
 </script>
 </body>
