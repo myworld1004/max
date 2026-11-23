@@ -308,9 +308,9 @@ const MONS = [
   ['늪지 오우거','👹'],['독전갈','🦂'],['거미 여왕','🕷️'],['떠도는 망령','👻'],['검은 마녀','🧙'],
   ['고대 골렘','🗿'],['피의 뱀파이어','🧛'],['산악 트롤','🧌'],['늪 악어왕','🐊'],['어둠의 마왕','😈'],
 ];
-// 난이도: 체력은 50부터 5씩, 공격력은 4 + 스테이지×0.8, 1.7초마다 공격, 4번째 공격마다 강공격(×1.8)
+// 난이도: 체력은 40부터 4씩, 공격력은 4 + 스테이지×0.8, 1.7초마다 공격, 4번째 공격마다 강공격(×1.8)
 const MON_INT = 1700, STRONG_EVERY = 4, STRONG_MULT = 1.8;
-const monFor = s => { const [name,emo] = MONS[(s-1) % MONS.length]; return {name,emo,hp:50 + 5*(s-1),atk:4 + Math.floor(s*0.8)}; };
+const monFor = s => { const [name,emo] = MONS[(s-1) % MONS.length]; return {name,emo,hp:40 + 4*(s-1),atk:4 + Math.floor(s*0.8)}; };
 
 const SKILL_CD = [0.7, 2.2, 0]; // 궁극기는 쿨타임 대신 게이지 충전
 function skills(p){
